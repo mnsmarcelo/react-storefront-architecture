@@ -1,0 +1,21 @@
+{
+  "name": "login-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "implicitDependencies": [
+      "login"
+    ],
+    "targets": {
+      "e2e": {
+        "executor": "@nx/playwright:playwright",
+        "outputs": [
+          "{workspaceRoot}/dist/.playwright/apps/login-e2e"
+        ],
+        "options": {
+          "config": "apps/login-e2e/playwright.config.ts"
+        }
+      }
+    }
+  }
+}
