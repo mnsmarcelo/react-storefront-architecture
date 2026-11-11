@@ -6,6 +6,16 @@
     "name": "shell",
     "sourceRoot": "apps/shell/src",
     "targets": {
+      "test": {
+        "executor": "@nx/jest:jest",
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ],
+        "dependsOn": [],
+        "options": {
+          "jestConfig": "apps/shell/jest.config.cts"
+        }
+      },
       "build": {
         "executor": "@nx/webpack:webpack",
         "outputs": [
