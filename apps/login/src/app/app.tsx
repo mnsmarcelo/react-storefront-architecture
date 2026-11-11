@@ -5,7 +5,9 @@ import {
   Form,
   Input,
   Checkbox,
-  LockOutlined, UserOutlined, Card,
+  LockOutlined,
+  UserOutlined,
+  Card,
 } from '@react-storefront-architecture/ui';
 import { useAuth } from '@react-storefront-architecture/auth';
 import { Link } from 'react-router-dom';
@@ -21,7 +23,6 @@ export function App() {
       email: 'teste@empresa.com',
       permissions: ['CARD_READ', 'CARD_CREATE'],
     });
-
   };
 
   return (
@@ -42,14 +43,18 @@ export function App() {
           layout="vertical"
         >
           <Form.Item
-            name="username"
+            name="email"
             rules={[
-              { required: true, message: 'Por favor, insira seu usuário!' },
+              { required: true, message: 'Por favor, insira seu e-mail!' },
+              { type: 'email', message: 'Por favor, insira um e-mail válido!' },
             ]}
           >
             <Input
               prefix={<UserOutlined style={{ color: 'rgba(0,0,0,.25)' }} />}
-              placeholder="Usuário"
+              type="email"
+              autoComplete="email"
+              aria-label="E-mail"
+              placeholder="E-mail"
               size="large"
             />
           </Form.Item>
