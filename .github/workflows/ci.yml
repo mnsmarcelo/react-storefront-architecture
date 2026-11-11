@@ -11,6 +11,24 @@ permissions:
   contents: read
 
 jobs:
+  login-tests:
+    name: Login unit tests
+    runs-on: ubuntu-latest
+    env:
+      NX_DAEMON: 'false'
+      NX_NO_CLOUD: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+        env:
+          CYPRESS_INSTALL_BINARY: '0'
+      - name: Run login tests with coverage
+        run: npm run test:login:coverage -- --ci --runInBand
+
   main:
     runs-on: ubuntu-latest
     steps:
@@ -37,7 +55,9 @@ jobs:
       # Prepend any command with "nx record --" to record its logs to Nx Cloud
       # - run: npx nx record -- echo Hello World
       # When you enable task distribution, run the e2e-ci task instead of e2e
-      - run: npx nx run-many -t lint test build typecheck e2e
+      - name: Run tests for other projects
+        run: npx nx run-many -t test --exclude=login
+      - run: npx nx run-many -t lint build typecheck e2e
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: npx nx fix-ci
         if: always()
