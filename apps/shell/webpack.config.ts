@@ -1,4 +1,6 @@
 import { composePlugins, withNx } from '@nx/webpack';
+const ForkTsCheckerWebpackPlugin: typeof import('fork-ts-checker-webpack-plugin') = require('fork-ts-checker-webpack-plugin');
+import { resolve } from 'node:path';
 import { withReact } from '@nx/react';
 import { withModuleFederation } from '@nx/module-federation/webpack.js';
 import { ModuleFederationConfig } from '@nx/module-federation';
@@ -19,4 +21,19 @@ export default composePlugins(
   withNx(),
   withReact(),
   withModuleFederation(config, { dts: false }),
+  (webpackConfig) => {
+    // Keep declarations of referenced libraries up to date while serving.
+    webpackConfig.plugins = webpackConfig.plugins?.map((plugin) =>
+      plugin instanceof ForkTsCheckerWebpackPlugin
+        ? new ForkTsCheckerWebpackPlugin({
+            typescript: {
+              configFile: resolve(__dirname, 'tsconfig.app.json'),
+              build: true,
+              mode: 'write-references',
+            },
+          })
+        : plugin,
+    );
+    return webpackConfig;
+  },
 );

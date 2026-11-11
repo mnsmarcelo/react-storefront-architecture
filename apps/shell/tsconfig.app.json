@@ -32,6 +32,12 @@
   "include": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
   "references": [
     {
+      "path": "../../libs/shared/ui/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/shared/auth/tsconfig.lib.json"
+    },
+    {
       "path": "../login/tsconfig.app.json"
     }
   ]

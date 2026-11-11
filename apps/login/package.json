@@ -6,6 +6,16 @@
     "name": "login",
     "sourceRoot": "apps/login/src",
     "targets": {
+      "test": {
+        "executor": "@nx/jest:jest",
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ],
+        "dependsOn": [],
+        "options": {
+          "jestConfig": "apps/login/jest.config.cts"
+        }
+      },
       "build": {
         "executor": "@nx/webpack:webpack",
         "outputs": [

@@ -1,1 +1,51 @@
-/* Your styles goes here. */
+/* 1. Reseta margens, preenchimentos e bordas */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* 2. Remove margens do body e define altura base */
+body {
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+/* 3. Melhora a exibição de mídias */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* 4. Remove estilos padrão de listas */
+ul,
+ol {
+  list-style: none;
+}
+
+/* 5. Herda fontes para inputs e botões */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
+
+/* 6. Evita estouro de texto em elementos longos */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}

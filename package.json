@@ -2,9 +2,15 @@
   "name": "@react-storefront-architecture/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "test:login": "nx test login",
+    "test:login:watch": "nx test login --watch",
+    "test:login:coverage": "nx test login --coverage",
+    "start": "nx serve shell --devRemotes=login"
+  },
   "private": true,
   "dependencies": {
+    "antd": "^6.7.0",
     "next": "~16.0.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

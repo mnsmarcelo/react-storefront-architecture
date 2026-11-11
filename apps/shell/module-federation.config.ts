@@ -2,6 +2,8 @@ import { ModuleFederationConfig } from '@nx/module-federation';
 
 const config: ModuleFederationConfig = {
   name: 'shell',
+  // Keep React bound to the singleton already loaded by the shell.
+  disableNxRuntimeLibraryControlPlugin: true,
   /**
    * To use a remote that does not exist in your current Nx Workspace
    * You can use the tuple-syntax to define your remote
@@ -14,7 +16,29 @@ const config: ModuleFederationConfig = {
    * declare module 'my-external-remote';
    *
    */
+  // Remotes are registered at runtime from module-federation.manifest.json.
   remotes: [],
+  shared: (libraryName, sharedConfig) => {
+    const sharedLibraries = [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-dom/client',
+      '@react-storefront-architecture/auth',
+    ];
+
+    if (sharedLibraries.includes(libraryName)) {
+      return {
+        ...sharedConfig,
+        singleton: true,
+        strictVersion: false,
+        requiredVersion: false,
+      };
+    }
+
+    return sharedConfig;
+  },
 };
 
 /**
