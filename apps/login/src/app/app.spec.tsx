@@ -37,7 +37,7 @@ describe('Login', () => {
 
   it('exibe os campos, a opção de lembrar e o link de recuperação', async () => {
     await renderLogin();
-    expect(screen.getByPlaceholderText('Usuário')).toBeTruthy();
+    expect(screen.getByPlaceholderText('E-mail')).toBeTruthy();
     expect(screen.getByPlaceholderText('Senha')).toBeTruthy();
     expect((screen.getByRole('checkbox') as HTMLInputElement).checked).toBe(
       true,
@@ -53,7 +53,7 @@ describe('Login', () => {
     await renderLogin();
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
     expect(
-      await screen.findByText('Por favor, insira seu usuário!'),
+      await screen.findByText('Por favor, insira seu e-mail!'),
     ).toBeTruthy();
     expect(
       await screen.findByText('Por favor, insira sua senha!'),
@@ -61,23 +61,23 @@ describe('Login', () => {
     expect(screen.getByLabelText('Sessão').textContent).toBe('Sem sessão');
   });
 
-  it('exige a senha mesmo quando o usuário está preenchido', async () => {
+  it('exige a senha mesmo quando o e-mail está preenchido', async () => {
     await renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Usuário'), {
-      target: { value: 'teste' },
+    fireEvent.change(screen.getByPlaceholderText('E-mail'), {
+      target: { value: 'teste@empresa.com' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
     expect(
       await screen.findByText('Por favor, insira sua senha!'),
     ).toBeTruthy();
-    expect(screen.queryByText('Por favor, insira seu usuário!')).toBeNull();
+    expect(screen.queryByText('Por favor, insira seu e-mail!')).toBeNull();
     expect(screen.getByLabelText('Sessão').textContent).toBe('Sem sessão');
   });
 
   it('atualiza a sessão com o usuário simulado ao enviar credenciais', async () => {
     await renderLogin();
-    fireEvent.change(screen.getByPlaceholderText('Usuário'), {
-      target: { value: 'teste' },
+    fireEvent.change(screen.getByPlaceholderText('E-mail'), {
+      target: { value: 'teste@empresa.com' },
     });
     fireEvent.change(screen.getByPlaceholderText('Senha'), {
       target: { value: 'senha-teste' },
@@ -92,5 +92,20 @@ describe('Login', () => {
         'teste@empresa.com',
       ),
     );
+  });
+
+  it('rejeita um e-mail inválido sem autenticar', async () => {
+    await renderLogin();
+    fireEvent.change(screen.getByPlaceholderText('E-mail'), {
+      target: { value: 'email-invalido' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('Senha'), {
+      target: { value: 'senha-teste' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+    expect(
+      await screen.findByText('Por favor, insira um e-mail válido!'),
+    ).toBeTruthy();
+    expect(screen.getByLabelText('Sessão').textContent).toBe('Sem sessão');
   });
 });
