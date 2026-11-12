@@ -1,11 +1,12 @@
 import { composePlugins, withNx } from '@nx/webpack';
-const ForkTsCheckerWebpackPlugin: typeof import('fork-ts-checker-webpack-plugin') = require('fork-ts-checker-webpack-plugin');
 import { resolve } from 'node:path';
 import { withReact } from '@nx/react';
 import { withModuleFederation } from '@nx/module-federation/webpack.js';
 import { ModuleFederationConfig } from '@nx/module-federation';
 
 import baseConfig from './module-federation.config';
+
+const ForkTsCheckerWebpackPlugin: typeof import('fork-ts-checker-webpack-plugin') = require('fork-ts-checker-webpack-plugin');
 
 const config: ModuleFederationConfig = {
   ...baseConfig,

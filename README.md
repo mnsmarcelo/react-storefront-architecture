@@ -19,8 +19,7 @@ Para iniciar o projeto em desenvolvimento, execute na raiz:
 npm start
 ```
 
-Esse comando inicia o shell em http://localhost:4200 e o microfrontend de login
-em http://localhost:4201, com atualizacao automatica durante o desenvolvimento.
+Esse comando inicia o shell em http://localhost:4200, com atualizacao automatica durante o desenvolvimento.
 Use `Ctrl+C` para encerrar os servidores.
 
 Se o PowerShell bloquear o script `npm.ps1`, use `npm.cmd start`.
@@ -36,7 +35,7 @@ npm start
 To create a production bundle:
 
 ```sh
-npx nx run-many --target=build --projects=shell,login
+npx nx build shell
 ```
 
 To see all available targets to run for a project, run:
@@ -95,23 +94,15 @@ And join the Nx community:
 - [Our Youtube channel](https://www.youtube.com/@nxdevtools)
 - [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
 
-## Testes do login
+## Autentica??o e testes
 
-O login usa Jest e React Testing Library com jsdom. Execute na raiz:
+O shell usa a biblioteca compartilhada auth para autenticar pelo Keycloak local em
+http://127.0.0.1:8080, realm workspace e client frontend-shell.
+Login, cadastro e recupera??o de senha ficam nas telas do Keycloak.
+Ap?s autenticar, o cabe?alho exibe o nome do usu?rio e a op??o de sair.
+
+Execute os testes do shell com:
 
 ```sh
-npm run test:login
-npm run test:login:watch
-npm run test:login:coverage
+npx nx test shell --runInBand
 ```
-
-No PowerShell, use `npm.cmd` caso `npm.ps1` esteja bloqueado.
-O relatório HTML fica em `apps/login/test-output/jest/coverage/index.html`.
-Também é possível executar `npx nx test login --runInBand`.
-Os testes resolvem as bibliotecas locais pelo código-fonte, sem exigir build prévio.
-
-A suíte cobre os campos do formulário, validação obrigatória, opção de lembrar,
-link de recuperação e atualização da sessão com o usuário simulado. A consulta
-inicial de sessão é simulada como não autenticada, sem chamadas reais à API.
-O login atual ainda usa usuário fixo e registra as credenciais no console;
-os testes documentam esse comportamento, sem validar autenticação real.

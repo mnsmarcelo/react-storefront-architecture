@@ -10,12 +10,6 @@
       "path": "./apps/shell"
     },
     {
-      "path": "./apps/login-e2e"
-    },
-    {
-      "path": "./apps/login"
-    },
-    {
       "path": "./libs/shared/ui"
     },
     {

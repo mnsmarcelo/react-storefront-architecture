@@ -1,5 +1,3 @@
-import { Dispatch, SetStateAction } from 'react';
-
 export interface User {
   id: string;
   name: string;
@@ -14,5 +12,4 @@ export interface AuthState {
   login(): void;
   logout(): void;
   refreshSession(): Promise<void>;
-  setUser: Dispatch<SetStateAction<User | null>>;
 }
