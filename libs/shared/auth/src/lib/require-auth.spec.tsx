@@ -14,7 +14,7 @@ function renderProtected(overrides: Partial<AuthState> = {}) {
     login: vi.fn(),
     logout: vi.fn(),
     refreshSession: vi.fn(),
-    setUser: vi.fn(),
+
     ...overrides,
   };
   render(
@@ -35,7 +35,7 @@ describe('RequireAuth', () => {
     expect(screen.queryByRole('button')).toBeNull();
   });
 
-  it('oferece login quando não há autenticação', () => {
+  it('oferece login quando não hÃ¡ autenticaÃ§Ã£o', () => {
     const state = renderProtected();
     expect(screen.queryByText('Conteúdo privado')).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));

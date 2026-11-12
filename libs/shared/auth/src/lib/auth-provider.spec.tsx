@@ -1,69 +1,83 @@
-import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthProvider } from './auth-provider';
 import { useAuth } from './auth-context';
-import type { User } from './auth.types';
+import { keycloak } from './keycloak';
 
-const user: User = {
-  id: '123',
-  name: 'Teste',
-  email: 'teste@empresa.com',
-  permissions: ['CARD_READ'],
-};
-
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-  vi.restoreAllMocks();
+vi.mock('./keycloak', () => ({
+  keycloak: {
+    authenticated: false,
+    tokenParsed: undefined,
+    clientId: 'frontend-shell',
+    updateToken: vi.fn().mockResolvedValue(false),
+    clearToken: vi.fn(),
+    login: vi.fn().mockResolvedValue(undefined),
+    logout: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+beforeEach(() => {
+  vi.clearAllMocks();
+  keycloak.authenticated = false;
+  keycloak.tokenParsed = undefined;
 });
+afterEach(cleanup);
 
 describe('AuthProvider', () => {
-  it('restaura a sessão retornada pela API', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue({ ok: true, json: async () => user });
-    vi.stubGlobal('fetch', fetchMock);
+  it('restaura o usuário e as roles do token', () => {
+    keycloak.authenticated = true;
+    keycloak.tokenParsed = {
+      sub: '123',
+      name: 'Teste',
+      email: 'teste@empresa.com',
+      realm_access: { roles: ['READ'] },
+      resource_access: { 'frontend-shell': { roles: ['READ', 'CREATE'] } },
+    };
     const { result } = renderHook(useAuth, { wrapper: AuthProvider });
-    expect(result.current.loading).toBe(true);
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(fetchMock).toHaveBeenCalledWith('/api/auth/me');
-    expect(result.current.user).toEqual(user);
+    expect(result.current.user).toEqual({
+      id: '123',
+      name: 'Teste',
+      email: 'teste@empresa.com',
+      permissions: ['READ', 'CREATE'],
+    });
     expect(result.current.authenticated).toBe(true);
   });
-
-  it('limpa a sessão quando uma atualização retorna 401', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockResolvedValueOnce({ ok: true, json: async () => user })
-        .mockResolvedValueOnce({ ok: false, status: 401 }),
+  it('permanece anônimo sem sessão e delega login/logout ao Keycloak', () => {
+    const { result } = renderHook(useAuth, { wrapper: AuthProvider });
+    expect(result.current.authenticated).toBe(false);
+    result.current.login();
+    result.current.logout();
+    expect(keycloak.login).toHaveBeenCalledWith({
+      redirectUri: window.location.origin + '/',
+    });
+    expect(keycloak.logout).toHaveBeenCalledWith({
+      redirectUri: window.location.origin + '/',
+    });
+  });
+  it('limpa o usuário se a renovação falhar', async () => {
+    keycloak.authenticated = true;
+    keycloak.tokenParsed = { sub: '123' };
+    vi.mocked(keycloak.updateToken).mockRejectedValueOnce(
+      new Error('Sessão expirada'),
     );
     const { result } = renderHook(useAuth, { wrapper: AuthProvider });
-    await waitFor(() => expect(result.current.authenticated).toBe(true));
     await act(async () => {
-      await result.current.refreshSession();
+      await expect(result.current.refreshSession()).rejects.toThrow(
+        'Sessão expirada',
+      );
     });
+    expect(keycloak.clearToken).toHaveBeenCalled();
     expect(result.current.user).toBeNull();
-    expect(result.current.authenticated).toBe(false);
     expect(result.current.loading).toBe(false);
   });
-
-  it('encerra o carregamento e registra falhas de rede', async () => {
-    const error = new Error('Sem conexão');
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(error));
-    const logError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined);
-    const { result } = renderHook(useAuth, { wrapper: AuthProvider });
-    await waitFor(() => expect(result.current.loading).toBe(false));
-    expect(result.current.authenticated).toBe(false);
-    expect(logError).toHaveBeenCalledWith(error);
-  });
-
-  it('exige que useAuth esteja dentro do provider', () => {
-    expect(() => renderHook(useAuth)).toThrow(
-      'useAuth deve ser usado dentro de AuthProvider',
-    );
+  it('renova o token expirado e remove callbacks ao desmontar', async () => {
+    keycloak.authenticated = true;
+    keycloak.tokenParsed = { sub: '123' };
+    const { unmount } = renderHook(useAuth, { wrapper: AuthProvider });
+    await act(async () => {
+      keycloak.onTokenExpired?.();
+    });
+    expect(keycloak.updateToken).toHaveBeenCalledWith(30);
+    unmount();
+    expect(keycloak.onTokenExpired).toBeUndefined();
   });
 });

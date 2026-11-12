@@ -1,81 +1,71 @@
-﻿import { Suspense } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { loadRemote } from '@module-federation/enhanced/runtime';
+import { keycloak } from '@react-storefront-architecture/auth';
 import App from './app';
 
-jest.mock('@module-federation/enhanced/runtime', () => ({
-  loadRemote: jest.fn(),
-}));
-
-const user = {
-  id: '123',
-  name: 'Teste',
-  email: 'teste@empresa.com',
-  permissions: ['CARD_READ'],
-};
-
-const originalFetch = globalThis.fetch;
+jest.mock('keycloak-js', () =>
+  jest.fn().mockImplementation(() => ({
+    authenticated: false,
+    tokenParsed: undefined,
+    login: jest.fn().mockResolvedValue(undefined),
+    logout: jest.fn().mockResolvedValue(undefined),
+  })),
+);
 
 beforeEach(() => {
-  globalThis.fetch = jest.fn().mockResolvedValue({ ok: false, status: 401 });
-  jest
-    .mocked(loadRemote)
-    .mockResolvedValue({ default: () => <h1>Login remoto</h1> });
+  jest.clearAllMocks();
+  keycloak.authenticated = false;
+  keycloak.tokenParsed = undefined;
 });
 
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-  jest.restoreAllMocks();
-});
-
-function renderShell(path = '/') {
+function renderShell() {
   return render(
     <MemoryRouter
-      initialEntries={[path]}
       future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
     >
-      <Suspense fallback={<p>Carregando módulo...</p>}>
-        <App />
-      </Suspense>
+      <App />
     </MemoryRouter>,
   );
 }
 
 describe('Shell', () => {
-  it('exibe a navegação e solicita login para uma sessão não autenticada', async () => {
-    renderShell();
+  it('oferece login pelo Keycloak no cabeçalho quando não autenticado', async () => {
+    await act(async () => {
+      renderShell();
+    });
+    const header = within(screen.getByRole('banner'));
     expect(
-      screen.getByRole('link', { name: 'Home' }).getAttribute('href'),
+      header.getByRole('link', { name: 'Home' }).getAttribute('href'),
     ).toBe('/');
-    expect(
-      screen.getByRole('link', { name: 'Login' }).getAttribute('href'),
-    ).toBe('/login');
-    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeTruthy();
+    fireEvent.click(header.getByRole('button', { name: 'Entrar' }));
+    expect(keycloak.login).toHaveBeenCalledWith({
+      redirectUri: window.location.origin + '/',
+    });
     expect(
       screen.queryByRole('heading', { name: /Welcome shell/i }),
     ).toBeNull();
-    expect(loadRemote).not.toHaveBeenCalled();
+    expect(screen.queryByRole('link', { name: 'Login' })).toBeNull();
   });
 
-  it('exibe a home quando a API restaura uma sessão autenticada', async () => {
-    jest
-      .mocked(fetch)
-      .mockResolvedValue({ ok: true, json: async () => user } as Response);
-    renderShell();
+  it('substitui Entrar pelo nome do usuário autenticado e permite sair', async () => {
+    keycloak.authenticated = true;
+    keycloak.tokenParsed = {
+      sub: '123',
+      name: 'Maria Silva',
+      email: 'maria@empresa.com',
+    };
+    await act(async () => {
+      renderShell();
+    });
+    const header = within(screen.getByRole('banner'));
+    expect(header.getByText('Maria Silva')).toBeTruthy();
+    expect(header.queryByRole('button', { name: 'Entrar' })).toBeNull();
     expect(
-      await screen.findByRole('heading', { name: /Welcome shell/i }),
+      screen.getByRole('heading', { name: /Welcome shell/i }),
     ).toBeTruthy();
-    expect(fetch).toHaveBeenCalledWith('/api/auth/me');
-    expect(screen.queryByRole('button', { name: 'Entrar' })).toBeNull();
-  });
-
-  it('carrega o microfrontend na rota de login sem acessar um servidor remoto', async () => {
-    renderShell('/login');
-    expect(
-      await screen.findByRole('heading', { name: 'Login remoto' }),
-    ).toBeTruthy();
-    expect(loadRemote).toHaveBeenCalledWith('login/Module');
-    await waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/auth/me'));
+    fireEvent.click(header.getByRole('button', { name: 'Sair' }));
+    expect(keycloak.logout).toHaveBeenCalledWith({
+      redirectUri: window.location.origin + '/',
+    });
   });
 });

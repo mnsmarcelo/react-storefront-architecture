@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  login-tests:
-    name: Login unit tests
+  shell-tests:
+    name: Shell unit tests
     runs-on: ubuntu-latest
     env:
       NX_DAEMON: 'false'
@@ -26,8 +26,8 @@ jobs:
       - run: npm ci
         env:
           CYPRESS_INSTALL_BINARY: '0'
-      - name: Run login tests with coverage
-        run: npm run test:login:coverage -- --ci --runInBand
+      - name: Run shell tests with coverage
+        run: npx nx test shell --coverage --ci --runInBand
 
   main:
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
       # - run: npx nx record -- echo Hello World
       # When you enable task distribution, run the e2e-ci task instead of e2e
       - name: Run tests for other projects
-        run: npx nx run-many -t test --exclude=login
+        run: npx nx run-many -t test --exclude=shell
       - run: npx nx run-many -t lint build typecheck e2e
       # Nx Cloud recommends fixes for failures to help you get CI green faster. Learn more: https://nx.dev/ci/features/self-healing-ci
       - run: npx nx fix-ci

@@ -5,47 +5,67 @@ import {
   useMemo,
   type ReactNode,
 } from 'react';
-
 import { AuthContext } from './auth-context';
+import { keycloak } from './keycloak';
 import type { User, AuthState } from './auth.types';
 
+function currentUser(): User | null {
+  const token = keycloak.tokenParsed;
+  if (!keycloak.authenticated || !token?.sub) return null;
+  return {
+    id: token.sub,
+    name: token.name ?? token.preferred_username ?? '',
+    email: token.email ?? '',
+    permissions: [
+      ...new Set([
+        ...(token.realm_access?.roles ?? []),
+        ...(token.resource_access?.[keycloak.clientId ?? '']?.roles ?? []),
+      ]),
+    ],
+  };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(currentUser);
+  const [loading, setLoading] = useState(false);
   const refreshSession = useCallback(async () => {
     setLoading(true);
-
     try {
-      const response = await fetch('/api/auth/me');
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setUser(null);
-          return;
-        }
-
-        throw new Error('Erro ao consultar sessão');
-      }
-
-      const data: User = await response.json();
-      setUser(data);
+      if (keycloak.authenticated) await keycloak.updateToken(30);
+      setUser(currentUser());
+    } catch (error) {
+      keycloak.clearToken();
+      setUser(null);
+      throw error;
     } finally {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
-    refreshSession().catch(console.error);
+    const syncUser = () => setUser(currentUser());
+    keycloak.onAuthSuccess = syncUser;
+    keycloak.onAuthRefreshSuccess = syncUser;
+    keycloak.onAuthLogout = syncUser;
+    keycloak.onTokenExpired = () => {
+      refreshSession().catch(console.error);
+    };
+    return () => {
+      keycloak.onAuthSuccess = undefined;
+      keycloak.onAuthRefreshSuccess = undefined;
+      keycloak.onAuthLogout = undefined;
+      keycloak.onTokenExpired = undefined;
+    };
   }, [refreshSession]);
-
   const login = useCallback(() => {
-    window.location.assign('/login');
+    keycloak
+      .login({ redirectUri: window.location.origin + '/' })
+      .catch(console.error);
   }, []);
-
   const logout = useCallback(() => {
-    window.location.assign('/auth/logout');
+    keycloak
+      .logout({ redirectUri: window.location.origin + '/' })
+      .catch(console.error);
   }, []);
-
   const value = useMemo<AuthState>(
     () => ({
       user,
@@ -54,10 +74,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       refreshSession,
-      setUser,
     }),
     [user, loading, login, logout, refreshSession],
   );
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
